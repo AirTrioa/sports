@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>
+<html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>
+<html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>
+<html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Minimal and Clean Sign up / Login and Forgot Form by FreeHTML5.co</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Free HTML5 Template by FreeHTML5.co"/>
+  <meta name="keywords" content="free html5, free template, free bootstrap, html5, css3, mobile first, responsive"/>
+
+  <!-- Facebook and Twitter integration -->
+  <meta property="og:title" content=""/>
+  <meta property="og:image" content=""/>
+  <meta property="og:url" content=""/>
+  <meta property="og:site_name" content=""/>
+  <meta property="og:description" content=""/>
+  <meta name="twitter:title" content=""/>
+  <meta name="twitter:image" content=""/>
+  <meta name="twitter:url" content=""/>
+  <meta name="twitter:card" content=""/>
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+  <link rel="shortcut icon" href="favicon.ico">
+
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700,300' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/animate.css">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- toastr -->
+  <link rel="stylesheet" href="/js/toastr/toastr.css">
+  <!--&lt;!&ndash; Moment &ndash;&gt;-->
+  <!--<script src="/js/moment/moment.min.js"></script>-->
+
+  <!--&lt;!&ndash; ant-design-vue &ndash;&gt;-->
+  <!--<link rel="stylesheet" href="/js/ant-design-vue/antd.css">-->
+  <!--&lt;!&ndash;<script src="/vue/vue.js"></script>&ndash;&gt;-->
+  <!--<script src="/js/ant-design-vue/antd.js"></script>-->
+
+  <!-- Modernizr JS -->
+  <script src="js/modernizr-2.6.2.min.js"></script>
+  <!-- FOR IE9 below -->
+  <!--[if lt IE 9]>
+  <script src="js/respond.min.js"></script>
+  <![endif]-->
+
+</head>
+<body>
+<div id="vue_det">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12 text-center">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-4">
+
+
+        <!-- Start Sign In Form -->
+        <form class="fh5co-form animate-box" data-animate-effect="fadeInLeft">
+          <h2>{{title}}</h2>
+          <div class="form-group">
+            <label for="username" class="sr-only">UserId</label>
+            <input type="text" class="form-control" id="username" ref="usr" placeholder="UserId"
+                   autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="password" class="sr-only">Password</label>
+            <input type="password" class="form-control" id="password" ref="pwd" placeholder="Password"
+                   autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="remember"><input type="checkbox" id="remember"> Remember Me</label>
+          </div>
+          <div class="form-group">
+            <p>还没注册? <a href="sign-up2.html">立即注册</a> | <a href="forgot2.html">忘记密码?</a>
+            </p>
+          </div>
+          <div class="form-group">
+            <input type="button" @click="login" value="Sign In" class="btn btn-primary">
+          </div>
+        </form>
+        <!-- END Sign In Form -->
+
+      </div>
+
+
+    </div>
+    <div class="row" style="padding-top: 60px; clear: both;">
+    </div>
+  </div>
+</div>
+<!--vue-->
+<script src="../js/vue.min.js"></script>
+<!-- jQuery -->
+<script src="js/jquery.min.js"></script>
+<!-- Bootstrap -->
+<script src="js/bootstrap.min.js"></script>
+<!-- Placeholder -->
+<script src="js/jquery.placeholder.min.js"></script>
+<!-- Waypoints -->
+<script src="js/jquery.waypoints.min.js"></script>
+<!-- toastr -->
+<script src="/js/toastr/toastr.js"></script>
+
+<!-- Main JS -->
+<script src="js/main.js"></script>
+</body>
+<script type="text/javascript">
+  var myApp = new Vue({
+    el: '#vue_det',
+    data: {
+      title: 'NJIT健身云'
+    },
+    methods: {
+      login: function () {
+        var userId = this.$refs.usr.value;
+        var password = this.$refs.pwd.value;
+        var self = this;
+        $.ajax({
+          type: "GET",
+          url: "/sports/user/" + userId + "/" + password,
+          data: "",
+          success: function (data) {
+            if (data.success) {
+              var type = data.data.type;
+              var name = data.data.username;
+              if (type === 'admin') {
+                toastr.success("管理员["+name+"]登录成功", '验证通过');
+                location.href = "/data_sys";
+              } else if (type === 'normal') {
+                toastr.success("用户["+name+"]登录成功!", "验证通过");
+                location.href = "/user_setting"
+              } else if (type === 'coach') {
+                toastr.success("教练["+name+"]登录成功", "验证通过");
+                location.href = "/coach_setting";
+              }
+            } else {
+              toastr.error(data.message, "登录失败,");
+            }
+          }
+        });
+      }
+    }
+  });
+</script>
+</html>
+

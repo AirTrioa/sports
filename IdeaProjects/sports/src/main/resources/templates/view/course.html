@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="mainLayout">
+<body>
+<div th:fragment="main-body">
+  <div id="preloading">
+    <div class="spinner">
+      <div class="rect1"></div>
+      <div class="rect2"></div>
+      <div class="rect3"></div>
+      <div class="rect4"></div>
+      <div class="rect5"></div>
+    </div>
+  </div>
+
+  <div id="VueApp">
+    <a-layout id="components-layout">
+      <a-layout>
+        <a-layout-sider :trigger="null" collapsible v-model="collapsed">
+          <a-menu theme="dark" mode="inline" :default-selected-keys="defaultSelectedKeys"
+                  :default-open-keys="defaultOpenKeys">
+            <template v-for="list in menuList">
+              <a-sub-menu :key="list.key" v-if="list.children && list.children.length > 0">
+                  <span slot="title">
+                      <a-icon :type="list.icon"></a-icon>
+                      <span>{{list.name}}</span>
+                  </span>
+                <a-menu-item :key="item.key" v-for="item in list.children"><a :href="item.path">{{item.name}}</a>
+                </a-menu-item>
+              </a-sub-menu>
+              <a-menu-item v-else :key="list.key" class="reset-a">
+                <a-icon :type="list.icon"></a-icon>
+                <span><a :href="list.path">{{list.name}}</a></span>
+              </a-menu-item>
+            </template>
+          </a-menu>
+        </a-layout-sider>
+
+        <a-layout>
+          <a-layout-header style="background: #fff; padding: 0">
+            <a-icon class="trigger" :type="collapsed ? 'menu-unfold' : 'menu-fold'"
+                    @click="collapsed = !collapsed"></a-icon>
+
+            <div style="float: right">
+              <a-avatar shape="square" size="large" :src="img_src" icon="user"></a-avatar>
+              <a-button type="danger" @click="logout" icon="logout">{{usr_name}}</a-button>
+            </div>
+
+          </a-layout-header>
+
+          <a-breadcrumb style="margin: 16px 0; padding-left: 24px;">
+            <a-breadcrumb-item>首页</a-breadcrumb-item>
+            <a-breadcrumb-item>列表页</a-breadcrumb-item>
+            <a-breadcrumb-item>课程管理</a-breadcrumb-item>
+          </a-breadcrumb>
+
+          <a-layout-content :style="{ background: '#fff', padding: '24px', margin: 0, minHeight: '500px' }">
+            <div class="table-page-search-wrapper">
+              <a-form layout="inline">
+                <a-row :gutter="48">
+                  <a-col :md="8" :sm="24">
+                    <a-form-item label="课程名称">
+                      <a-input v-model="queryParam.name" placeholder=""></a-input>
+                    </a-form-item>
+                  </a-col>
+                  <a-col :md="8" :sm="24">
+                    <a-form-item label="课时">
+                      <a-input v-model="queryParam.lesson" placeholder=""></a-input>
+                    </a-form-item>
+                  </a-col>
+
+                  <template v-if="advanced">
+
+                    <a-col :md="8" :sm="24">
+                      <a-form-item label="开课时间">
+                        <a-date-picker v-model="queryParam.date" style="width: 100%"
+                                       placeholder="请输入开课时间"></a-date-picker>
+                      </a-form-item>
+                    </a-col>
+                  </template>
+                  <a-col :md="!advanced && 8 || 24" :sm="24">
+                    <span class="table-page-search-submitButtons"
+                          :style="advanced && { float: 'right', overflow: 'hidden' } || {} ">
+                        <a-button type="primary" icon="search" @click="queryList">查询</a-button>
+                        <a-button style="margin-left: 8px" icon="reload" @click="resetSearchForm">重置</a-button>
+                        <a @click="toggleAdvanced" style="margin-left: 8px">
+                            {{ advanced ? '收起' : '展开' }}
+                            <a-icon :type="advanced ? 'up' : 'down'"></a-icon>
+                        </a>
+                    </span>
+                  </a-col>
+                </a-row>
+              </a-form>
+            </div>
+
+            <div class="table-operator" style="margin-bottom: 15px">
+              <a-button type="primary" icon="plus" @click="handleEdit()">新建课程数据</a-button>
+              <a-button type="danger" icon="upload" @click="importExcel()">导入EXCEL数据</a-button>
+              <a-button type="primary" icon="export" @click="exportTemplate()">下载导入模板</a-button>
+            </div>
+
+            <a-table :columns="columns" :data-source="data" :scroll="{y:542}" @change="onChange"
+                     :loading="listLoading" :pagination="pagination" :row-key="'id'">
+                  <span slot="action" slot-scope="text, record">
+                      <a @click="handleEdit(record)">编辑</a>
+                      <a-divider type="vertical"></a-divider>
+                      <a @click="handleDelete(record)">删除</a>
+                  </span>
+            </a-table>
+
+            <a-modal title="新增/编辑" :visible="visible" :mask-closable="false"
+                     :confirm-loading="confirmLoading" :width="800" @ok="handleOk" @cancel="cancelHandel">
+              <a-form :form="form" ref="modalForm" >
+                <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="name">
+                  <a-input placeholder="课程名称"
+                           v-decorator="['name',{rules: [{ required: true, message: '请输入课程名称' }]}]"></a-input>
+                </a-form-item>
+
+                <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="lesson">
+                  <a-input-number placeholder="课时"
+                                  :min="0"
+                                  v-decorator="['lesson',{rules: [{ required: true, message: '请输入课时' }]}]"></a-input-number>
+                </a-form-item>
+
+                <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="开课时间">
+                  <a-date-picker style="width: 100%" format="YYYY-MM-DD" placeholder="Select Time"
+                                 v-decorator="['date']" ref="riqi"></a-date-picker>
+                </a-form-item>
+
+                <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="上课时段">
+                  <a-select style="width: 120px" @change="timeChange">
+                    <a-select-option value="am">上午</a-select-option>
+                    <a-select-option value="pm">下午</a-select-option>
+                    <a-select-option value="night">晚上</a-select-option>
+                  </a-select>
+                </a-form-item>
+
+                <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="选择房间">
+                  <a-select style="width: 120px" @change="roomChange">
+                    <a-select-option v-for="province in provinceData" :key="province">{{province}}</a-select-option>
+                  </a-select>
+                </a-form-item>
+
+                <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="描述">
+                  <a-textarea :rows="5" placeholder="请填写一段描述"
+                              v-decorator="['description', {rules: [{ required: true }]}]"></a-textarea>
+                </a-form-item>
+
+              </a-form>
+            </a-modal>
+
+            <a-modal title="导入Excel" :visible="importTip" :mask-closable="false"
+                     :confirm-loading="confirmLoading" :width="400" @ok="importCancel"
+                     @cancel="importCancel">
+              <template>
+                <a-upload name="file" :multiple="true" :action="uploadUrl()" :headers="headers"
+                          :file-list="fileList" @change="handleChange">
+                  <!-- <div style="padding-left: 100px">-->
+                  <a-button>
+                    <a-icon type="upload"/>
+                    选择文件
+                  </a-button>
+                  <!--</div>-->
+                </a-upload>
+                <p class="lh2 nomg">*请上传.xls或者.xlsx格式文件.</p>
+                <p class="lh2 nomg">*请严格按照模板Excel的格式填写.</p>
+                <p class="lh2 nomg">*导入最多不超过200条数据.</p>
+                <p class="lh2 nomg">*文件的大小不超过1M.</p>
+              </template>
+            </a-modal>
+
+          </a-layout-content>
+        </a-layout>
+      </a-layout>
+    </a-layout>
+  </div>
+  <script type="application/javascript">
+    var VueApp = new Vue({
+      el: '#VueApp',
+      data: {
+        //左侧菜单列表
+        menuList: menuList,
+        //默认展开菜单
+        defaultOpenKeys: ['sub2'],
+        //默认选中菜单
+        defaultSelectedKeys: ['sub2-1'],
+        headers: {
+          authorization: 'authorization-text'
+        },
+        //页面接口信息
+        api: {
+          list: {
+            url: '/sports/course',
+            listType: GLOBAL_CONSTANTS.METHOD.GET,
+            addType: GLOBAL_CONSTANTS.METHOD.POST,
+            editType: GLOBAL_CONSTANTS.METHOD.PUT,
+            deleteType: GLOBAL_CONSTANTS.METHOD.DELETE
+          },
+          staticResource: {
+            url: ''
+          }
+        },
+        //分页数据
+        page: {
+          page: GLOBAL_CONSTANTS.ONE,
+          size: GLOBAL_CONSTANTS.DEFAULT_PAGE_SZIE,
+          totalPages: GLOBAL_CONSTANTS.ZERO
+        },
+        //查询参数
+        queryParam: {},
+        //排序信息
+        sortInfo: [],
+        openDateStr: '',
+        labelCol: {
+          xs: {span: 24},
+          sm: {span: 5}
+        },
+        wrapperCol: {
+          xs: {span: 24},
+          sm: {span: 12}
+        },
+        buttonCol: {
+          wrapperCol: {
+            xs: {span: 24},
+            sm: {span: 12, offset: 5}
+          }
+        },
+        //展开、收起控制
+        advanced: false,
+        collapsed: false,
+        visible: false,
+        confirmLoading: false,
+        listLoading: false,
+        importTip: false,
+        pagination: {
+          showSizeChanger: true,
+          pageSizeOptions: ['5', '10', '20', '50', '100']
+        },
+        columns: [{
+          title: '课程名称',
+          dataIndex: 'name',
+          width: '250px',
+          sorter: function (a, b) {
+          }
+        }, {
+          title: '课时',
+          dataIndex: 'lesson',
+          width: '250px',
+          sorter: function (a, b) {
+          }
+        }, {
+          title: '开课时间',
+          dataIndex: 'date',
+          width: '300px'
+        }, {
+          title: '上课地点',
+          dataIndex: 'roomName',
+          width: '150px'
+        }, {
+          title: '上课时间段',
+          dataIndex: 'timeFrame',
+          width: '150px'
+        }, {
+          title: '描述',
+          dataIndex: 'description',
+          width: '450px'
+        }, {
+          title: '操作',
+          dataIndex: 'action',
+          width: '160px',
+          scopedSlots: {customRender: 'action'}
+        }],
+        data: [],
+        selected: null,
+        fileList: [],
+        warn_delete: false,
+        timeFrame: '',
+        usr_name: '',
+        img_src: '',
+        provinceData: ['办公室', '机房'],
+        province: '',
+        selectedRoomName: ''
+      },
+      computed: {
+        form: function () {
+          return this.$form.createForm(this)
+        }
+      },
+      methods: {
+        _renderList: function () {
+          var pageParam = {
+            page: this.page.page,
+            size: this.page.size
+          };
+          var ajaxOpt = {
+            url: this.api.list.url + '/page',
+            type: this.api.list.listType,
+            param: {
+              // pageDto: JSON.stringify(pageParam),
+              // sort: JSON.stringify(this.sortInfo),
+              params: JSON.stringify(this.queryParam)
+            }
+          };
+          var self = this;
+          this.listLoading = true;
+          jsonAjax(ajaxOpt, function (data) {
+            var page = BRS.clone(self.pagination);
+            //pageDto.total = data.totalSize;
+            // self.openDateStr = data[0].date.substring(10);
+            // for (var i = 0; i < data.length; i++) {
+            //   var dateStr = data[i].date.slice(0, 10);
+            //   data[i].date = dateStr;
+            //   dateStr = '';
+            // }
+            self.data = data;
+            self.listLoading = false;
+            self.pagination = page
+          });
+          this.getUserSession();
+          this.getRoomData();
+        },
+        //获取Session
+        getUserSession: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.login
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null == data) {
+              location.href = session.logon;
+              return;
+            }
+            self.usr_name = data.username;
+            self.img_src = img_src + data.userUrl;
+          });
+        },
+        //注销登录--销毁Session
+        logout: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.logout
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null != data) {
+              location.href = session.logout;
+              return;
+            }
+            self.$notification['error']({
+              message: "抱歉",
+              description: "注销失败"
+            });
+          });
+
+        },
+        getRoomData: function () {
+          var ajaxOpt = {
+            url: room_api + "/page",
+            type: GET_METHOD,
+            param: {
+              'params': '{}'
+            }
+          };
+          var self = this;
+          jsonAjax(ajaxOpt, function (data) {
+            var array = [];
+            for (var i = 0; i < data.length; i++) {
+              var obj = data[i].name;
+              array.push(obj);
+              obj = '';
+            }
+            self.provinceData = array;
+          });
+
+        },
+        roomChange: function (value) {
+          this.province = this.provinceData[value];
+          this.selectedRoomName = value;
+        },
+
+        timeChange: function (value) {
+          this.timeFrame = value;
+        },
+        //下载导出模板
+        exportTemplate: function () {
+          var url = this.api.staticResource.url + "file/课程导入模板.xlsx";
+          window.open(url);
+        },
+        //导入Excel数据
+        importExcel: function () {
+          this.importTip = true;
+        },
+        importCancel: function () {
+          this.importTip = false;
+          this._renderList();
+        },
+        //导入Excel需要的地址
+        uploadUrl: function () {
+          return this.api.list.url + '/excel';
+        },
+        handleChange: function (info) {
+          var fileName = info.file.name;
+          var status = info.file.status;
+          var fileList = info.fileList;
+
+          fileList = fileList.slice(-2);
+
+          if (status === 'done' && fileList[fileList.length - 1].response.success) {
+            this.$message.success(fileName + '文件上传成功');
+            this.importCancel();
+          } else if (status === 'done' && !fileList[info.fileList.length - 1].response.success) {
+            this.$message.warn(fileList[info.fileList.length - 1].response.message);
+            fileList[fileList.length - 1].name = '请按正确的格式上传';
+          } else if (status === 'error') {
+            this.$message.error(fileName + '文件上传失败,请重新上传');
+          }
+          this.fileList = fileList;
+        },
+        //新增
+        handleEdit: function (record) {
+          if (record) {
+            this.selected = record.id;
+            var value = {
+              'name': record.name,
+              'lesson': record.lesson,
+              // 'date': record.date,
+              'description': record.description
+              // ,
+              // 'timeFrame':record.timeFrame
+            };
+            this.form.setFieldsValue(value);
+          }
+          this.visible = true;
+        },
+        //删除
+        handleDelete: function (record) {
+          var self = this;
+          this.$confirm({
+            title: '警告',
+            content: '真的要删除课程 ' + record.name + ' 吗?',
+            okText: '删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk: function () {
+              var ajaxOpt = {
+                url: self.api.list.url + '/' + record.id,
+                type: self.api.list.deleteType,
+                showSuccessMsg: true
+              };
+              jsonAjax(ajaxOpt, function (data) {
+                //当前页数据删除后为空，返回上一页
+                if (self.data.length === 1 && self.page.page > 1) {
+                  self.page.page -= 1;
+                }
+                self._renderList()
+              });
+            },
+            onCancel: function () {
+            }
+          })
+        },
+        //展开，收起
+        toggleAdvanced: function () {
+          this.advanced = !this.advanced
+        },
+        //查询
+        queryList: function () {
+          for (var attr in this.queryParam) {
+            if (BRS.isBlank(this.queryParam[attr])) {
+              delete this.queryParam[attr]
+            }
+          }
+          this._renderList()
+        },
+        //重置
+        resetSearchForm: function () {
+          this.queryParam = {
+            date: moment(new Date())
+          }
+        },
+        //取消关闭
+        cancelHandel: function (e) {
+          this.form.resetFields();
+          this.selected = null;
+          this.visible = false
+        },
+
+        //提交确定
+        handleOk: function () {
+          var self = this;
+          // 触发表单验证
+          this.form.validateFields(function (err, values) {
+            // 验证表单没错误
+            if (!err) {
+              self.confirmLoading = true;
+              var obj = {
+                name: values.name,
+                lesson: values.lesson,
+                date: self.$refs.riqi.value,
+                description: values.description,
+                timeFrame: self.timeFrame,
+                roomName: self.selectedRoomName
+              };
+              if (self.selected) {
+                obj.id = self.selected
+              }
+              var ajaxOpt = {
+                url: self.selected ? self.api.list.url : self.api.list.url,
+                type: self.selected ? self.api.list.editType : self.api.list.addType,
+                param: {
+                  'params': JSON.stringify(obj)
+                },
+                showSuccessMsg: true
+              };
+              jsonAjax(ajaxOpt, function (data) {
+                self.form.resetFields();
+                self.selected = null;
+                self.visible = false;
+                self.confirmLoading = false;
+                self.timeFrame = '';
+                self._renderList();
+              });
+            }
+          })
+        },
+        //分页，排序控制
+        onChange: function (pagination, filters, sorter) {
+          //设置当前分页
+          this.page.page = pagination.current;
+          this.page.size = pagination.pageSize;
+          //设置排序
+          var curOrder = null;
+          if (sorter) {
+            var direction = sorter.order == "ascend" ? '0' : '1';
+            for (var i = 0; i < this.sortInfo.length; i++) {
+              if (this.sortInfo[i].property == sorter.field) {
+                //改变排序方向，从原来的列表中移除，重新加入排序第一顺位
+                curOrder = this.sortInfo[i];
+                curOrder.direction = direction;
+                this.sortInfo.splice(i, 1);
+                break;
+              }
+            }
+            if (!curOrder) {
+              curOrder = {"property": sorter.field, "direction": direction};
+            }
+
+            if ('{}' == JSON.stringify(sorter)) {
+              //sorter为空对象，说明清除当前排序
+              this.sortInfo.splice(0, 1);
+            } else {
+              // 加入排序
+              this.sortInfo.splice(0, 0, curOrder);
+            }
+
+          }
+
+          this._renderList();
+        }
+      },
+      mounted: function () {
+        this._renderList();
+        BRS.preLoading('hide');
+      }
+    })
+  </script>
+
+  <style>
+    #VueApp, #components-layout {
+      height: 100%;
+    }
+
+    #components-layout .trigger {
+      font-size: 18px;
+      line-height: 64px;
+      padding: 0 24px;
+      cursor: pointer;
+      transition: color .3s;
+    }
+
+    #components-layout .trigger:hover {
+      color: #1890ff;
+    }
+
+  </style>
+
+</div>
+</body>
+</html>

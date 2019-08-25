@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>
+<html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>
+<html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>
+<html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Minimal and Clean Sign up / Login and Forgot Form by FreeHTML5.co</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Free HTML5 Template by FreeHTML5.co"/>
+  <meta name="keywords" content="free html5, free template, free bootstrap, html5, css3, mobile first, responsive"/>
+
+
+  <!-- Facebook and Twitter integration -->
+  <meta property="og:title" content=""/>
+  <meta property="og:image" content=""/>
+  <meta property="og:url" content=""/>
+  <meta property="og:site_name" content=""/>
+  <meta property="og:description" content=""/>
+  <meta name="twitter:title" content=""/>
+  <meta name="twitter:image" content=""/>
+  <meta name="twitter:url" content=""/>
+  <meta name="twitter:card" content=""/>
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+  <link rel="shortcut icon" href="favicon.ico">
+
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700,300' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/animate.css">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- toastr -->
+  <link rel="stylesheet" href="/js/toastr/toastr.css">
+  <!-- Modernizr JS -->
+  <script src="js/modernizr-2.6.2.min.js"></script>
+  <!-- FOR IE9 below -->
+  <!--[if lt IE 9]>
+  <script src="js/respond.min.js"></script>
+  <![endif]-->
+
+</head>
+<body class="style-2">
+<div id="myApp">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+
+        <div class="col-md-12 text-center">
+          <ul class="menu">
+            <li class="active"><a href="">Phone</a></li>
+            <li><a href="forgot2.html">Email</a></li>
+          </ul>
+        </div>
+
+
+        <!-- Start Sign In Form -->
+        <form ref="formEmail" class="fh5co-form animate-box" data-animate-effect="fadeInLeft">
+          <h2>{{title}}</h2>
+          <template>
+            <div class="form-group">
+              <div class="alert alert-success" role="alert">请输入注册手机号码</div>
+            </div>
+            <div class="form-group">
+              <label for="phone" class="sr-only">Phone</label>
+              <input type="number" class="form-control" id="phone" placeholder="Phone" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <p><a href="index2.html">登录</a> or <a href="sign-up2.html">注册</a></p>
+            </div>
+            <div class="form-group">
+              <input type="button" value="Send Message" @click="send" class="btn btn-primary">
+            </div>
+          </template>
+        </form>
+        <!-- END Sign In Form -->
+
+        <!--&lt;!&ndash; Button trigger modal &ndash;&gt;-->
+        <!--<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal">-->
+        <!--Launch demo modal-->
+        <!--</button>-->
+
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">重置密码</h4>
+              </div>
+              <div class="modal-body">
+                <div class="form-group">
+                  <div class="alert alert-success" role="alert">请输入六位验证码</div>
+                </div>
+                <div class="form-group">
+                  <label for="auth_code" class="sr-only">验证码</label>
+                  <input type="number" ref="auth_code" class="form-control" id="auth_code" placeholder="auth_code"
+                         autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label for="password" class="sr-only">新密码</label>
+                  <input type="password" ref="new_pwd" class="form-control" id="password" placeholder="password"
+                         autocomplete="off">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @click="SaveChanges">Save changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- jQuery -->
+<script src="js/jquery.min.js"></script>
+<!-- Bootstrap -->
+<script src="js/bootstrap.min.js"></script>
+<!-- Placeholder -->
+<script src="js/jquery.placeholder.min.js"></script>
+<!-- Waypoints -->
+<script src="js/jquery.waypoints.min.js"></script>
+<!-- Main JS -->
+<script src="js/main.js"></script>
+<script src="../js/vue.min.js"></script>
+<!-- toastr -->
+<script src="/js/toastr/toastr.js"></script>
+<script type="text/javascript">
+  var myApp = new Vue({
+    el: '#myApp',
+    data: {
+      title: '找回密码',
+      api: {
+        user: {
+          url: '/sports/user',
+          GET_METHOD: "get",
+          POST_METHOD: "post"
+        },
+        message: {
+          url: '/message',
+          GET_METHOD: "get"
+        }
+      },
+      mainCode: '',
+      selectId: '',
+      myPhone: ''
+    },
+    methods: {
+      send: function () {
+
+        var form = this.$refs.formEmail;
+        var phone = form[0].value;
+        this.myPhone = phone;
+        var obj = {phone: phone};
+        var self = this;
+
+        $.ajax({
+          type: this.api.user.POST_METHOD,
+          url: this.api.user.url + "/message",
+          data: {
+            obj: JSON.stringify(obj)
+          },
+          success: function (data) {
+            if (data.success) {
+              toastr.success("发送成功!");
+              self.mainCode = data.data;
+              $('#myModal').modal();
+              var code = data.data;
+              $.ajax({
+                type: self.api.user.GET_METHOD,
+                url: "http://liuzwnjit.xyz:8080/msg/sports/message/" + phone + "/" + code,
+                success: function () {
+                  $('#myModal').modal();
+                }
+              });
+            } else {
+              toastr.error(data.message);
+            }
+          }
+        });
+      },
+      SaveChanges: function () {
+        var authCode = this.$refs.auth_code.value;
+        //验证码通过则就通过phone和pwd重置密码
+        if (this.mainCode === authCode) {
+          var pwd = this.$refs.new_pwd.value;
+          var obj = {phone: this.myPhone, password: pwd};
+          $.ajax({
+            type: this.api.user.POST_METHOD,
+            url: this.api.user.url + "/phone",
+            data: {
+              obj: JSON.stringify(obj)
+            },
+            success: function (data) {
+              if (data.success) {
+                location.href = "/login-sign-up/index2.html";
+              } else {
+                toastr.error(data.message);
+              }
+            }
+          });
+        } else {
+          toastr.error("验证码不正确");
+        }
+
+      }
+    }
+  });
+
+</script>
+
+</body>
+</html>
+

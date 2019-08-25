@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="mainLayout">
+<body>
+<div th:fragment="main-body">
+  <div id="preloading">
+    <div class="spinner">
+      <div class="rect1"></div>
+      <div class="rect2"></div>
+      <div class="rect3"></div>
+      <div class="rect4"></div>
+      <div class="rect5"></div>
+    </div>
+  </div>
+
+  <div id="VueApp">
+    <a-layout id="components-layout">
+      <a-layout>
+        <a-layout-sider :trigger="null" collapsible v-model="collapsed">
+          <!--<div class="logo"></div>-->
+          <a-menu theme="dark" mode="inline" :default-selected-keys="defaultSelectedKeys"
+                  :default-open-keys="defaultOpenKeys">
+            <a-sub-menu :key="list.key" v-for="list in menuList">
+              <span slot="title">
+                <a-icon :type="list.icon"></a-icon>
+                <a v-if="list.path" :href="list.path">{{list.name}}</a>
+                <span v-else>{{list.name}}</span>
+              </span>
+              <a-menu-item v-if="list.children && list.children.length > 0" :key="item.key"
+                           v-for="item in list.children"><a :href="item.path">{{item.name}}</a></a-menu-item>
+            </a-sub-menu>
+          </a-menu>
+        </a-layout-sider>
+
+        <a-layout>
+          <a-layout-header style="background: #fff; padding: 0">
+            <a-icon class="trigger" :type="collapsed ? 'menu-unfold' : 'menu-fold'"
+                    @click="collapsed = !collapsed"></a-icon>
+
+            <div style="float: right">
+              <a-avatar shape="square" size="large" :src="img_src" icon="user"></a-avatar>
+              <a-button type="danger" @click="logout" icon="logout">{{usr_name}}</a-button>
+            </div>
+
+          </a-layout-header>
+
+          <a-breadcrumb style="margin: 16px 0; padding-left: 24px;">
+            <a-breadcrumb-item>首页</a-breadcrumb-item>
+            <a-breadcrumb-item>列表页</a-breadcrumb-item>
+            <a-breadcrumb-item>项目总览</a-breadcrumb-item>
+          </a-breadcrumb>
+
+          <a-layout-content :style="{ background: '#fff', padding: '24px', margin: 0, minHeight: '500px' }">
+            <a-layout>
+
+              <a-layout-sider width="80px" style="background: #fff">
+
+              </a-layout-sider>
+
+              <a-layout-content :style="{ background: '#fff', padding: '0 0 0 24px' }">
+
+
+                <div style="width: 500px;height: 500px;float: left;margin-right: 4%">
+                  <canvas id="myChart2" width="400px" height="400px"></canvas>
+                  <p style="font-size: large;text-align: center;margin-top: 1em">&nbsp;&nbsp;&nbsp;&nbsp;最近七天的访问量:{{xyzDate}}</p>
+                </div>
+
+
+                <div style="width: 200px;float: left;margin-right: 4%">
+                  <div style="width: 200px;height: 200px;margin-bottom: 1%">
+                    <canvas id="myChart1" width="100px" height="100px"></canvas>
+                    <p style="text-align: center;margin-top: 1em">&nbsp;&nbsp;&nbsp;&nbsp;教练男女比例</p>
+                  </div>
+
+                  <div style="width: 200px;height: 200px;margin-top: 50px">
+                    <canvas id="myChart3" width="100px" height="100px"></canvas>
+                    <p style="text-align: center;margin-top: 1em">&nbsp;&nbsp;&nbsp;&nbsp;前五热门课程</p>
+                  </div>
+                </div>
+                <div style="width: 200px;float: left;">
+                  <div style="width: 200px;height: 200px;margin-bottom: 1%">
+                    <canvas id="myChart4" width="100px" height="100px"></canvas>
+                    <p style="text-align: center;margin-top: 1em">&nbsp;&nbsp;&nbsp;&nbsp;前五热门教练</p>
+                  </div>
+
+
+                  <div style="width: 200px;height: 200px;margin-top: 50px">
+                    <canvas id="myChart5" width="100px" height="100px"></canvas>
+                    <p style="text-align: center;margin-top: 1em">&nbsp;&nbsp;&nbsp;&nbsp;教练等级比例</p>
+                  </div>
+                </div>
+
+
+              </a-layout-content>
+            </a-layout>
+
+
+          </a-layout-content>
+        </a-layout>
+      </a-layout>
+    </a-layout>
+  </div>
+
+  <script>
+    var myApp = new Vue({
+      el: '#VueApp',
+      data: {
+        //左侧菜单列表
+        menuList: menuList,
+        //默认展开菜单
+        defaultOpenKeys: ['sub5'],
+        //默认选中菜单
+        defaultSelectedKeys: ['sub5-2'],
+        //页面接口信息
+        api: {
+          list: {
+            url: '/sports/user_log',
+            listType: GLOBAL_CONSTANTS.METHOD.GET,
+            addType: GLOBAL_CONSTANTS.METHOD.POST,
+            editType: GLOBAL_CONSTANTS.METHOD.PUT,
+            deleteType: GLOBAL_CONSTANTS.METHOD.DELETE
+          },
+          //分组
+          tree: {
+            url: '/sports/user_log',
+            listType: GLOBAL_CONSTANTS.METHOD.GET,
+            addType: GLOBAL_CONSTANTS.METHOD.POST,
+            editType: GLOBAL_CONSTANTS.METHOD.PUT,
+            deleteType: GLOBAL_CONSTANTS.METHOD.DELETE
+          }
+        },
+        //分页数据
+        page: {
+          page: GLOBAL_CONSTANTS.ONE,
+          size: GLOBAL_CONSTANTS.DEFAULT_PAGE_SZIE,
+          totalPages: GLOBAL_CONSTANTS.ZERO
+        },
+        //查询参数
+        queryParam: {},
+        //排序信息
+        sortInfo: [],
+        //页面选中的TreeNode
+        selectTreeNode: '',
+        defaultValue: '',
+        labelCol: {
+          xs: {span: 24},
+          sm: {span: 5}
+        },
+        wrapperCol: {
+          xs: {span: 24},
+          sm: {span: 12}
+        },
+        buttonCol: {
+          wrapperCol: {
+            xs: {span: 24},
+            sm: {span: 12, offset: 5}
+          }
+        },
+        //展开、收起控制
+        advanced: false,
+        collapsed: false,
+        visible: false,
+        importTip: false,
+        addGroupTip: false,
+        editGroupTip: false,
+        addDeviceTip: false,
+        confirmLoading: false,
+        listLoading: false,
+        pagination: {
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100']
+        },
+        columns: [{
+          title: '操作人',
+          dataIndex: 'username',
+          width: '250px',
+          sorter: function (a, b) {
+          }
+        }, {
+          title: '操作时间',
+          dataIndex: 'createDate',
+          width: '300px'
+        }, {
+          title: '操作模块',
+          dataIndex: 'oprModule',
+          width: '250px'
+        }, {
+          title: '操作',
+          dataIndex: 'operation',
+          width: '250px',
+          sorter: function (a, b) {
+          }
+        }],
+        data: [],
+        devicesData: [],
+        selected: null,
+        fileList: [],
+        treeData: [{
+          title: '巡检分组',
+          key: '0-0',
+          children: [{
+            title: '第一分组',
+            key: '0-0-0',
+            children: [
+              {key: '0-0-0-0', title: '巡检1', isLeaf: true}
+            ]
+          }, {
+            title: '第二分组',
+            key: '0-0-1',
+            children: [
+              {key: '0-0-1-0', title: '巡检2', isLeaf: true},
+              {key: '0-0-1-1', title: '巡检3', isLeaf: true}
+            ]
+          }, {
+            title: '第三分组',
+            key: '0-0-2',
+            children: [
+              {key: '0-0-2-0', title: '巡检4', isLeaf: true}
+            ]
+          }]
+        }],
+        selectedRowKeys: [],
+        openDateStr: '',
+        usr_name: '',
+        provinceData: ['人员管理', '课程管理', '房间管理', '器材管理', '数据分析', '系统管理'],
+        selectedModuleName: '',
+        xyzDate: '',
+        labelsData: [],
+        img_src: ''
+      },
+      computed: {
+        form: function () {
+          return this.$form.createForm(this)
+        },
+        formGroup: function () {
+          return this.$form.createForm(this)
+        },
+        editForm: function () {
+          return this.$form.createForm(this)
+        },
+        hasSelected: function () {
+          return this.selectedRowKeys.length > 0;
+        }
+      },
+      components: {
+        // Schart:'schart'
+      },
+      methods: {
+        _renderList: function () {
+          var pageParam = {
+            page: this.page.page,
+            size: this.page.size
+          };
+          var ajaxOpt = {
+            url: this.api.list.url + '/page',
+            type: this.api.list.listType,
+            param: {
+              page: JSON.stringify(pageParam),
+              sort: JSON.stringify(this.sortInfo),
+              params: JSON.stringify(this.queryParam)
+            }
+          };
+          var self = this;
+          this.listLoading = true;
+          jsonAjax(ajaxOpt, function (data) {
+            var page = BRS.clone(self.pagination);
+            self.data = data;
+            self.listLoading = false;
+            self.pagination = page;
+            self.xyzDate = self.getDay(-6) + "-" + new Date().Format("yyyy-MM-dd");
+          });
+          this.getTreeData();
+          this.getUserSession();
+        },
+        //获取Session
+        getUserSession: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.login
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null == data) {
+              location.href = session.logon;
+              return;
+            }
+            self.usr_name = data.username;
+            self.img_src = img_src + data.userUrl;
+          });
+        },
+        //注销登录--销毁Session
+        logout: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.logout
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null != data) {
+              location.href = session.logout;
+              return;
+            }
+            self.$notification['error']({
+              message: "抱歉",
+              description: "注销失败"
+            });
+          });
+        },
+        //获取树的值
+        getTreeData: function () {
+          var ajaxOpt = {
+            url: this.api.tree.url + "/tree",
+            type: this.api.tree.listType
+          };
+          var self = this;
+          jsonAjax(ajaxOpt, function (data) {
+            self.treeData = data;
+          });
+        },
+        getDay: function (day) {
+          var today = new Date();
+          var targetday_milliseconds = today.getTime() + 1000 * 60 * 60 * 24 * day;
+          today.setTime(targetday_milliseconds); //注意，这行是关键代码
+          var tYear = today.getFullYear();
+          var tMonth = today.getMonth();
+          var tDate = today.getDate();
+          tMonth = this.doHandleMonth(tMonth + 1);
+          tDate = this.doHandleMonth(tDate);
+          return tYear + "-" + tMonth + "-" + tDate;
+        },
+        get7Day: function (day) {
+          var today = new Date();
+          var targetday_milliseconds = today.getTime() + 1000 * 60 * 60 * 24 * day;
+          today.setTime(targetday_milliseconds); //注意，这行是关键代码
+          var tDate = today.getDate();
+          var tMonth = today.getMonth();
+          tDate = this.doHandleMonth(tDate);
+          tMonth = this.doHandleMonth(tMonth + 1);
+          return tMonth + '-' + tDate;
+        },
+        doHandleMonth: function (month) {
+          var m = month;
+          if (month.toString().length === 1) {
+            m = "0" + month;
+          }
+          return m;
+        },
+        moduleName: function (value) {
+          this.selectedModuleName = value;
+        },
+        //展开，收起
+        toggleAdvanced: function () {
+          this.advanced = !this.advanced
+        },
+        //查询
+        queryList: function () {
+          for (var attr in this.queryParam) {
+            if (BRS.isBlank(this.queryParam[attr])) {
+              delete this.queryParam[attr]
+            }
+          }
+          var moduleName = this.selectedModuleName;
+          if (BRS.isNotBlank(moduleName)) {
+            var xyz = {
+              username: this.queryParam["username"],
+              createDate: this.queryParam["date"],
+              oprModule: moduleName
+            };
+            this.queryParam = xyz;
+            xyz = '';
+          }
+          this._renderList();
+        },
+        //重置
+        resetSearchForm: function () {
+          this.queryParam = {
+            date: moment(new Date())
+          }
+        },
+        //取消关闭
+        cancelHandel: function (e) {
+          this.visible = false
+        },
+        //提交确定
+        handleOk: function () {
+          var self = this;
+          // 触发表单验证
+          this.form.validateFields(function (err, values) {
+            // 验证表单没错误
+            if (!err) {
+              self.confirmLoading = true;
+              var obj = {
+                name: values.name,
+                sn: values.sn,
+                cmdbId: values.cmdbId,
+                manageUserName: values.manageUserName,
+                managePassword: values.managePassword
+              };
+              if (self.selected) {
+                obj.id = self.selected
+              }
+              var ajaxOpt = {
+                url: self.api.list.url,
+                type: self.selected ? self.api.list.editType : self.api.list.addType,
+                contentType: 'application/json',
+                param: JSON.stringify(obj),
+                showSuccessMsg: true
+              };
+              jsonAjax(ajaxOpt, function (data) {
+                self.form.resetFields();
+                self.selected = null;
+                self.visible = false;
+                self.confirmLoading = false;
+                self._renderList()
+              });
+            }
+          })
+        },
+
+        //分页，排序控制
+        onChange: function (pagination, filters, sorter) {
+          //设置当前分页
+          this.page.page = pagination.current;
+          this.page.size = pagination.pageSize;
+          //设置排序
+          var curOrder = null;
+          if (sorter) {
+            var direction = sorter.order === "ascend" ? '0' : '1';
+            for (var i = 0; i < this.sortInfo.length; i++) {
+              if (this.sortInfo[i].property === sorter.field) {
+                //改变排序方向，从原来的列表中移除，重新加入排序第一顺位
+                curOrder = this.sortInfo[i];
+                curOrder.direction = direction;
+                this.sortInfo.splice(i, 1);
+                break;
+              }
+            }
+            if (!curOrder) {
+              curOrder = {"property": sorter.field, "direction": direction};
+            }
+
+            if ('{}' === JSON.stringify(sorter)) {
+              //sorter为空对象，说明清除当前排序
+              this.sortInfo.splice(0, 1);
+            } else {
+              // 加入排序
+              this.sortInfo.splice(0, 0, curOrder);
+            }
+
+          }
+
+          this._renderList();
+        },
+        //左侧树选中
+        onSelect: function (selectedKeys, info) {
+          for (var attr in this.queryParam) {
+            if (BRS.isBlank(this.queryParam[attr])) {
+              delete this.queryParam[attr]
+            }
+          }
+          if (info.selectedNodes.length === 0) {
+            this.$message.warn("请选择分组节点");
+            return;
+          }
+          this.selectTreeNode = info.selectedNodes[0];
+          var leaf = info.selectedNodes[0].data.props.isLeaf;
+          if (!leaf) {
+            return;
+          }
+          var userId = info.selectedNodes[0].data.props.id;
+          var pageParam = {
+            page: this.page.page,
+            size: this.page.size
+          };
+          var self = this;
+          var ajaxOpt = {
+            url: self.api.list.url + "/user_id/" + userId,
+            type: self.api.list.listType,
+            param: {
+              page: JSON.stringify(pageParam),
+              sort: JSON.stringify(this.sortInfo),
+              params: JSON.stringify(this.queryParam)
+            }
+          };
+          self.listLoading = true;
+          jsonAjax(ajaxOpt, function (data) {
+            var page = BRS.clone(self.pagination);
+            self.data = data;
+            self.listLoading = false;
+            self.pagination = page
+          });
+          self.getTreeData();
+        },
+        picture: function () {
+          var ctx1 = document.getElementById("myChart1");
+          var ctx2 = document.getElementById("myChart2");
+          var ctx3 = document.getElementById("myChart3");
+          var ctx4 = document.getElementById("myChart4");
+          var ctx5 = document.getElementById("myChart5");
+          var labelsData = [
+            this.get7Day(-6),
+            this.get7Day(-5),
+            this.get7Day(-4),
+            this.get7Day(-3),
+            this.get7Day(-2),
+            this.get7Day(-1),
+            this.get7Day(-0)
+
+          ];
+          var objAjax = {
+            url: this.api.list.url + '/page_view_num',
+            type: GET_METHOD
+          };
+          jsonAjax(objAjax, function (data) {
+            if (data != null) {
+              var myChart2 = new Chart(ctx2, {
+                type: "line",
+                data: {
+                  labels: labelsData,
+                  datasets: [
+                    {
+                      label: "访问量",
+                      backgroundColor: "rgba(54, 162, 235, 0.2)",
+                      borderColor: "rgba(54, 162, 235, 1)",
+                      borderWidth: 1,
+                      pointStrokeColor: "#fff",
+                      pointStyle: "crossRot",
+                      data: data,
+                      cubicInterpolationMode: "monotone",
+                      spanGaps: "false",
+                      fill: "false"
+                    }
+                  ]
+                },
+                options: {}
+              });
+            }
+          });
+
+          var ajaxObj = {
+            url: coach_api + '/sex_num',
+            type: GET_METHOD
+          };
+          jsonAjax(ajaxObj, function (data) {
+            if (null != data) {
+              var myChart1 = new Chart(ctx1, {
+                type: "pie",
+                data: {
+                  labels: ['男', '女'],
+                  datasets: [
+                    {
+                      label: "男女比例",
+                      backgroundColor: ["rgba(54, 162, 235, 0.2)", "rgba(225,10,10,0.3)"],
+                      borderColor: ["rgba(54, 162, 235, 1)", "rgba(225,103,110,1)"],
+                      borderWidth: 1,
+                      pointStrokeColor: "#fff",
+                      pointStyle: "crossRot",
+                      data: data,
+                      cubicInterpolationMode: "monotone",
+                      spanGaps: "false",
+                      fill: "false"
+                    }
+                  ]
+                },
+                options: {}
+              });
+            }
+          });
+
+          var ajax4 = {
+            url: coach_api + '/hot',
+            type: GET_METHOD
+          };
+          jsonAjax(ajax4, function (data) {
+            if (null != data) {
+              var myChart4 = new Chart(ctx4, {
+                type: "bar",
+                data: {
+                  labels: [data[0].coachName, data[1].coachName, data[2].coachName, data[3].coachName, data[4].coachName],
+                  datasets: [
+                    {
+                      label: "前五最热教练",
+                      // 	 	160 32 240
+                      backgroundColor: ["rgba(0, 0, 128, 0.2)", "rgba(127, 255, 212, 0.2)", "rgba(255, 255, 0, 0.2)", "rgba(250, 128, 114, 0.2)", "rgba(160, 32, 240, 0.2)"],
+                      borderColor: ["rgba(0, 0, 128, 1)", "rgba(127, 255, 212, 1)", "rgba(255, 255, 0, 1)", "rgba(250, 128, 114, 1)", "rgba(160, 32, 240, 1)"],
+                      borderWidth: 1,
+                      pointStrokeColor: "#fff",
+                      pointStyle: "crossRot",
+                      data: [data[0].userNum, data[1].userNum, data[2].userNum, data[3].userNum, data[4].userNum],
+                      cubicInterpolationMode: "monotone",
+                      spanGaps: "false",
+                      fill: "false"
+                    }
+                  ]
+                },
+                options: {}
+              });
+            }
+          });
+
+
+          var myChart3 = new Chart(ctx3, {
+            type: "radar",
+            data: {
+              labels: ["普拉提", "有氧舞蹈", "韵律操","搏击健美操","减肥训练"],
+              datasets: [
+                {
+                  label: "前五热门课程",
+                  // 	 	160 32 240
+                  backgroundColor: ["rgba(160, 32, 240, 0.2)"],
+                  borderColor: ["rgba(160, 32, 240, 1)"],
+                  borderWidth: 1,
+                  pointStrokeColor: "#fff",
+                  pointStyle: "crossRot",
+                  data: [2,1,1,2,0],
+                  cubicInterpolationMode: "monotone",
+                  spanGaps: "false",
+                  fill: "false"
+                }
+              ]
+            },
+            options: {}
+          });
+
+          var ajax5 = {
+            url:course_count_api+'/avg_grade',
+            type:GET_METHOD
+          };
+          jsonAjax(ajax5,function (data) {
+            if (null != data) {
+              var myChart5 = new Chart(ctx5, {
+                type: "pie",
+                data: {
+                  labels: ['S', 'A','B','C','D'],
+                  datasets: [
+                    {
+                      label: "教练等级比例",
+                      backgroundColor: ["rgba(0, 0, 128, 0.2)", "rgba(127, 255, 212, 0.2)", "rgba(255, 255, 0, 0.2)", "rgba(250, 128, 114, 0.2)", "rgba(160, 32, 240, 0.2)"],
+                      borderColor: ["rgba(0, 0, 128, 1)", "rgba(127, 255, 212, 1)", "rgba(255, 255, 0, 1)", "rgba(250, 128, 114, 1)", "rgba(160, 32, 240, 1)"],
+                      borderWidth: 1,
+                      pointStrokeColor: "#fff",
+                      pointStyle: "crossRot",
+                      data: data,
+                      cubicInterpolationMode: "monotone",
+                      spanGaps: "false",
+                      fill: "false"
+                    }
+                  ]
+                },
+                options: {}
+              });
+            }
+          });
+
+
+        }
+      },
+      mounted: function () {
+        this._renderList();
+        BRS.preLoading('hide');
+        this.picture();
+      }
+    })
+  </script>
+
+  <style>
+    #VueApp, #components-layout {
+      height: 100%;
+    }
+
+    #components-layout .trigger {
+      font-size: 18px;
+      line-height: 64px;
+      padding: 0 24px;
+      cursor: pointer;
+      transition: color .3s;
+    }
+
+    #components-layout .trigger:hover {
+      color: #1890ff;
+    }
+
+    #components-layout .logo {
+      height: 32px;
+      background: rgba(255, 255, 255, .2);
+      margin: 16px;
+    }
+  </style>
+</div>
+</body>
+</html>

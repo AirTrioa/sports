@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<base th:href="@{/}"/>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="keywords" content="">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <title>NJIT健身云管理平台</title>
+  <meta content="width=device-width, initial-scale=1, user-scalable=no, minimal-ui" name="viewport">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <!-- jQuery 2.2.3 -->
+  <script th:src="@{/lib/jQuery/jquery-2.2.3.min.js}"></script>
+
+  <!-- Moment -->
+  <script th:src="@{/lib/moment/moment.min.js}"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" th:href="@{/css/font-awesome/css/font-awesome.min.css}">
+
+  <!-- ant-design-vue -->
+  <link rel="stylesheet" th:href="@{/lib/ant-design-vue/antd.css}">
+  <script th:src="@{/lib/vue/vue.js}"></script>
+  <script th:src="@{/lib/ant-design-vue/antd.js}"></script>
+  <!-- veeValidate -->
+  <script th:src="@{/lib/vee-validate/vee-validate.js}"></script>
+
+  <!-- Nprogress -->
+  <link rel="stylesheet" th:href="@{/lib/nprogress/0.2.0/nprogress.css}">
+  <script th:src="@{/lib/nprogress/0.2.0/nprogress.js}"></script>
+
+  <!-- toastr -->
+  <link rel="stylesheet" th:href="@{/lib/toastr/toastr.css}">
+  <script th:src="@{/lib/toastr/toastr.js}"></script>
+
+  <!-- BRS -->
+  <script th:src="@{/lib/BRS.js}"></script>
+  <!-- general -->
+  <script th:src="@{/lib/general.js}"></script>
+
+  <!-- common.css -->
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+
+  <!--sChart.js-->
+  <script th:src="@{/lib/sChart/sChart.js}"></script>
+  <!--charts.js-->
+  <script th:src="@{https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js}"></script>
+  <script th:src="@{https://unpkg.com/vue-chartjs/dist/vue-chartjs.min.js}"></script>
+
+
+  <!-- HTML5 Shim and Respond.js IE8 support HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+  <script th:src="@{/lib/html5shiv/html5shiv.min.js}"></script>
+  <script th:src="@{/lib/respond/respond.min.js}"></script>
+  <![endif]-->
+</head>
+
+<body class="page-header-fixed">
+<div class="container-body" th:fragment="layout">
+  <div class="page-content" th:include="this :: main-body">
+    <!--子页面实现的地方-->
+  </div>
+</div>
+</body>
+</html>

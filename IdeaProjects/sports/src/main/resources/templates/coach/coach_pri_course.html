@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="mainLayout">
+<body>
+<div th:fragment="main-body">
+  <div id="preloading">
+    <div class="spinner">
+      <div class="rect1"></div>
+      <div class="rect2"></div>
+      <div class="rect3"></div>
+      <div class="rect4"></div>
+      <div class="rect5"></div>
+    </div>
+  </div>
+
+  <div id="VueApp">
+    <a-layout id="components-layout">
+      <a-layout>
+        <a-layout-sider :trigger="null" collapsible v-model="collapsed">
+          <a-menu theme="dark" mode="inline" :default-selected-keys="defaultSelectedKeys"
+                  :default-open-keys="defaultOpenKeys">
+            <template v-for="list in menuList">
+              <a-sub-menu :key="list.key" v-if="list.children && list.children.length > 0">
+                                <span slot="title">
+                                    <a-icon :type="list.icon"></a-icon>
+                                    <span>{{list.name}}</span>
+                                </span>
+                <a-menu-item :key="item.key" v-for="item in list.children"><a :href="item.path">{{item.name}}</a>
+                </a-menu-item>
+              </a-sub-menu>
+              <a-menu-item v-else :key="list.key" class="reset-a">
+                <a-icon :type="list.icon"></a-icon>
+                <span><a :href="list.path">{{list.name}}</a></span>
+              </a-menu-item>
+            </template>
+          </a-menu>
+        </a-layout-sider>
+
+        <a-layout>
+          <a-layout-header style="background: #fff; padding: 0">
+            <a-icon class="trigger" :type="collapsed ? 'menu-unfold' : 'menu-fold'"
+                    @click="collapsed = !collapsed"></a-icon>
+            <div style="float: right">
+              <a-avatar shape="square" size="large" :src="img_src" icon="user"></a-avatar>
+              <a-button type="danger" @click="logout" icon="logout">{{usr_name}}</a-button>
+            </div>
+
+          </a-layout-header>
+
+          <a-breadcrumb style="margin: 16px 0; padding-left: 24px;">
+            <a-breadcrumb-item>首页</a-breadcrumb-item>
+            <a-breadcrumb-item>列表页</a-breadcrumb-item>
+            <a-breadcrumb-item>发布私教</a-breadcrumb-item>
+          </a-breadcrumb>
+
+          <a-layout-content :style="{ background: '#fff', padding: '24px', margin: 0, minHeight: '500px' }">
+            <a-layout>
+              <!--页面左侧-->
+              <a-layout-sider width="150" style="background: #fff">
+
+                <div>
+                  <span style="font-size: 20px;text-align: center">已发布的私教</span>
+                </div>
+
+                <a-tree @select="onSelect" :tree-data="treeData"></a-tree>
+
+              </a-layout-sider>
+              <a-layout-content :style="{ background: '#fff' }">
+                <span style="font-size: 20px;margin-left: 68px">
+                  添加私教
+                </span>
+                <a-form :form="form" ref="modalForm">
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="名称">
+                    <a-input placeholder="名称"
+                             v-decorator="['name',{rules: [{ required: true, message: '请输入名称' }]}]">
+                    </a-input>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="lesson">
+                    <a-input-number placeholder="课时"
+                                    :min="0"
+                                    style="width: 100%"
+                                    v-decorator="['lesson',{rules: [{ required: true, message: '请输入课时' }]}]">
+                    </a-input-number>
+                  </a-form-item>
+
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="开课时间">
+                    <a-select style="width: 100%" @change="DateChange">
+                      <a-select-option value="1">周一</a-select-option>
+                      <a-select-option value="2">周二</a-select-option>
+                      <a-select-option value="3">周三</a-select-option>
+                      <a-select-option value="4">周四</a-select-option>
+                      <a-select-option value="5">周五</a-select-option>
+                    </a-select>
+
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="上课时段">
+                    <a-select style="width: 100%" @change="timeChange">
+                      <a-select-option value="am">上午</a-select-option>
+                      <a-select-option value="pm">下午</a-select-option>
+                      <a-select-option value="night">晚上</a-select-option>
+                    </a-select>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="选择房间">
+                    <a-select style="width: 100%" @change="roomChange">
+                      <a-select-option v-for="province in provinceData" :key="province">{{province}}</a-select-option>
+                    </a-select>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="描述">
+                    <a-textarea :rows="5" placeholder="请填写一段描述"
+                                v-decorator="['description', {rules: [{ required: true }]}]"></a-textarea>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="更改个人资料">
+                    <a-button
+                        type="primary"
+                        @click="handleEditMessage"
+                    >
+                      submit
+                    </a-button>
+
+                  </a-form-item>
+                </a-form>
+
+              </a-layout-content>
+
+              <template>
+                <div>
+                  <a-drawer
+                      style="width: 300px"
+                      :title="courseNameXyz"
+                      :placement="placement"
+                      :closable="false"
+                      @close="onClose"
+                      :visible="visible"
+                  >
+
+                    <span style="font-size: large">课程名称</span>
+                    <a-input placeholder="名称" v-model="draw_name" :read-only=true
+                    >
+                    </a-input>
+
+                    <span style="font-size: large">课程课时</span>
+                    <a-input placeholder="课时" v-model="draw_lesson" :read-only=true
+                             style="width: 100%"
+                    >
+                    </a-input>
+
+                    <span style="font-size: large">上课时间</span>
+                    <a-input placeholder="上课时间" v-model="draw_week" :read-only=true
+                             style="width: 100%"
+                    >
+                    </a-input>
+
+                    <span style="font-size: large">上课时段</span>
+                    <a-input placeholder="上课时段" v-model="draw_timeFrame" :read-only=true
+                             style="width: 100%"
+                    >
+                    </a-input>
+
+                    <span style="font-size: large">上课地点</span>
+                    <a-input placeholder="上课地点" v-model="draw_roomName" :read-only=true
+                             style="width: 100%"
+                    >
+                    </a-input>
+
+                    <span style="font-size: large">课程描述</span>
+                    <a-textarea :rows="3" placeholder="请填写一段描述" v-model="draw_desc" :read-only=true
+                    ></a-textarea>
+
+                    <a-button style="margin-left:28%;" icon="close-circle" @click="clickDelete" type="danger">
+                      删除
+                    </a-button>
+                  </a-drawer>
+                </div>
+              </template>
+
+              <a-layout-sider width="550" style="background: #fff">
+                <span style="font-size: 20px;text-align: center">执教公共课程</span>
+                <a-textarea placeholder="所带课程" :rows="3" :read-only=true v-model='publicCourseName'></a-textarea>
+                <span style="font-size: 20px;text-align: center;margin-top: 12px">我的课程表</span>
+
+                <a-table :columns="coachCourseColumns" :bordered=true :pagination=false :data-source="coachCourseData"
+                         :scroll="{y:300}" @change=""
+                         :loading="listLoading" :row-key="'timeFrame'">
+
+                </a-table>
+
+              </a-layout-sider>
+            </a-layout>
+          </a-layout-content>
+        </a-layout>
+      </a-layout>
+    </a-layout>
+  </div>
+  <script>
+    var myApp = new Vue({
+      el: '#VueApp',
+      data: {
+        //左侧菜单列表
+        menuList: coachList,
+        //默认展开菜单
+        defaultOpenKeys: ['sub2'],
+        //默认选中菜单
+        defaultSelectedKeys: ['sub2-1'],
+        //页面接口信息
+        headers: {
+          authorization: 'authorization-text'
+        },
+        api: {
+          //教练
+          list: {
+            url: '/sports/coach',
+            listType: GLOBAL_CONSTANTS.METHOD.GET,
+            addType: GLOBAL_CONSTANTS.METHOD.POST,
+            editType: GLOBAL_CONSTANTS.METHOD.PUT,
+            deleteType: GLOBAL_CONSTANTS.METHOD.DELETE
+          },
+          staticResource: {
+            url: 'http://127.0.0.1:8080/'
+          },
+          //课程信息
+          course: {
+            url: '/sports/course',
+            listType: GLOBAL_CONSTANTS.METHOD.GET,
+            addType: GLOBAL_CONSTANTS.METHOD.POST,
+            editType: GLOBAL_CONSTANTS.METHOD.PUT,
+            deleteType: GLOBAL_CONSTANTS.METHOD.DELETE
+          }
+        },
+        //分页数据
+        page: {
+          page: GLOBAL_CONSTANTS.ONE,
+          size: GLOBAL_CONSTANTS.DEFAULT_PAGE_SZIE,
+          totalPages: GLOBAL_CONSTANTS.ZERO
+        },
+        //查询参数
+        queryParam: {},
+        //排序信息
+        sortInfo: [],
+
+        labelCol: {
+          xs: {span: 24},
+          sm: {span: 5}
+        },
+        wrapperCol: {
+          xs: {span: 24},
+          sm: {span: 12}
+        },
+        buttonCol: {
+          wrapperCol: {
+            xs: {span: 24},
+            sm: {span: 12, offset: 5}
+          }
+        },
+        //关闭模态框时销毁子元素
+        destroyOnClose: true,
+        //展开、收起控制
+        advanced: false,
+        collapsed: false,
+        visible: false,
+        placement: 'left',
+        confirmLoading: false,
+        listLoading: false,
+        importTip: false,
+        //课程表模态框
+        courseTableTip: false,
+
+        pagination: {
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100']
+        },
+        columns: [{
+          title: '名称',
+          dataIndex: 'name',
+          width: '250px',
+          scopedSlots: {customRender: 'name'},
+          sorter: function (a, b) {
+          }
+        }, {
+          title: '年龄',
+          dataIndex: 'age',
+          width: '250px',
+          sorter: function (a, b) {
+          }
+        }, {
+          title: '性别',
+          dataIndex: 'sex',
+          width: '250px'
+        }, {
+          title: '教授课程',
+          dataIndex: 'courseName',
+          width: '250px'
+        }, {
+          title: '教授人数',
+          dataIndex: 'userNum',
+          width: '250px'
+        }, {
+          title: '操作',
+          dataIndex: 'action',
+          width: '160px',
+          scopedSlots: {customRender: 'action'}
+        }],
+        coachCourseColumns: [{
+          title: '时间/星期',
+          dataIndex: 'timeFrame',
+          width: '250px'
+        }, {
+          title: '周一',
+          dataIndex: 'monday',
+          width: '250px'
+        }, {
+          title: '周二',
+          dataIndex: 'tuesday',
+          width: '250px'
+        }, {
+          title: '周三',
+          dataIndex: 'wednesday',
+          width: '250px'
+        }, {
+          title: '周四',
+          dataIndex: 'thursday',
+          width: '250px'
+        }, {
+          title: '周五',
+          dataIndex: 'friday',
+          width: '250px'
+        }]
+        ,
+        data: [],
+        coachCourseData: [],
+        selected: null,
+        warn_delete: false,
+        /**
+         * 下拉框值
+         */
+        provinceData: ['瑜伽', '篮球'],
+        province: '',
+        coachSex: '',
+        courseName: '',
+        coachName: '',
+        courseTableName: '排课表',
+        usr_name: '',
+        img_src: '',
+        previewVisible: false,
+        previewImage: '',
+        fileList: [],
+        avatarTip: false,
+        user_Id: '',
+        publicCourseName: '',
+        treeData: [],
+        timeFrame: '',
+        selectedRoomName: '',
+        dateXyz: '',
+        courseNameXyz: '',
+        draw_name: '',
+        draw_lesson: '',
+        draw_week: '',
+        draw_desc: '',
+        draw_timeFrame: '',
+        draw_roomName: ''
+      },
+      computed: {
+        form: function () {
+          return this.$form.createForm(this)
+        }
+      },
+      methods: {
+        _renderList: function () {
+          this.getUserSession();
+          var self = this;
+          // this.listLoading = true;
+          this.getCourseByUserId();
+          this.getTreeData();
+          this.getSelectValue();
+          this.getCourseTable();
+        },
+        //获取Session
+        getUserSession: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.login
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null == data) {
+              location.href = session.logon;
+              return;
+            }
+            self.usr_name = data.username;
+            self.img_src = img_src + data.userUrl;
+            self.user_Id = data.userId;
+            self.getUserMessage();
+          });
+
+        },
+        //注销登录--销毁Session
+        logout: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.logout
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null != data) {
+              location.href = session.logout;
+              return;
+            }
+            self.$notification['error']({
+              message: "抱歉",
+              description: "注销失败"
+            });
+          });
+
+        },
+        //获取用户信息
+        getUserMessage: function () {
+
+        },
+        //提交更改信息
+        handleEditMessage: function () {
+          var self = this;
+          // 触发表单验证
+          this.form.validateFields(function (err, values) {
+            if (!err) {
+              var obj = {
+                name: values.name,
+                lesson: values.lesson,
+                week: self.dateXyz,
+                description: values.description,
+                timeFrame: self.timeFrame,
+                roomName: self.selectedRoomName,
+                coachId: self.user_Id
+              };
+              var ajaxOpt = {
+                url: pri_course_api,
+                type: POST_METHOD,
+                param: {
+                  'params': JSON.stringify(obj)
+                }
+              };
+              jsonAjax(ajaxOpt, function (data) {
+                self.form.resetFields();
+                self._renderList();
+                self.$notification['success']({
+                  message: "新增成功",
+                  description: "新增私教课程"
+                });
+              })
+            }
+          });
+        },
+        //根据用户信息查询课程
+        getCourseByUserId: function () {
+          var objAjax = {
+            url: course_api + '/coachId',
+            type: GET_METHOD
+          };
+          var self = this;
+          jsonAjax(objAjax, function (data) {
+            self.publicCourseName = "课程名: " + data.name + ";\r\n" +
+              "上课时段: " + data.timeFrame + ";\r\n" +
+              "上课地点: " + data.roomName + ";";
+          });
+        },
+        picture: function () {
+
+        },
+        //获取树的值
+        getTreeData: function () {
+          var objAjax = {
+            url: pri_course_api + '/coach/tree',
+            type: GET_METHOD
+          };
+          var self = this;
+          jsonAjax(objAjax, function (data) {
+            self.treeData = data;
+          });
+        },
+        //获取下拉框的值
+        getSelectValue: function () {
+          var ajaxOpt = {
+            url: room_api + "/private",
+            type: GET_METHOD
+          };
+          var self = this;
+          jsonAjax(ajaxOpt, function (data) {
+            var array = [];
+            for (var i = 0; i < data.length; i++) {
+              var obj = data[i].name;
+              array.push(obj);
+              obj = '';
+            }
+            self.provinceData = array;
+          });
+        },
+        //选中树的节点
+        onSelect: function (info) {
+
+
+          if (info.length < 1) {
+            return;
+          }
+          var ajaxObj = {
+            url: pri_course_api + "/" + info[0],
+            type: GET_METHOD
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            var value = {
+              'name': data.name,
+              'lesson': data.lesson,
+              'week': data.week,
+              'timeFrame': data.timeFrame,
+              'description': data.description,
+              'roomName': data.roomName
+            };
+            self.coachName = value.name;
+            self.courseNameXyz = value.name + "详情";
+            self.draw_name = value.name;
+            self.draw_lesson = value.lesson;
+            self.draw_week = "周" + value.week;
+            self.draw_timeFrame = value.timeFrame;
+            self.draw_desc = value.description;
+            self.draw_roomName = value.roomName;
+            self.$notification['success']({
+              message: "查询成功"
+            });
+
+          });
+          this.showDrawer();
+        },
+        //房间change
+        roomChange: function (value) {
+          this.province = this.provinceData[value];
+          this.selectedRoomName = value;
+        },
+        //时间change
+        timeChange: function (value) {
+          this.timeFrame = value;
+        },
+        DateChange: function (value) {
+          this.dateXyz = value;
+        },
+        showDrawer: function () {
+          this.visible = true
+        },
+        onClose: function () {
+          this.visible = false
+        },
+        clickDelete: function () {
+          var objAjax = {
+            url: pri_course_api + '/course_name/' + this.coachName,
+            type: DELETE_METHOD
+          };
+          var self = this;
+          jsonAjax(objAjax, function () {
+            self.$notification['success']({
+              message: "删除成功"
+            });
+            self._renderList();
+            self.onClose();
+          });
+        },
+        getCourseTable: function () {
+          var ajaxObj = {
+            url: pri_course_api + '/course_table',
+            type: GET_METHOD
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            self.coachCourseData = data;
+
+          });
+        }
+      },
+      mounted: function () {
+        this._renderList();
+        BRS.preLoading('hide');
+        this.picture();
+      }
+    })
+  </script>
+
+  <style>
+    #VueApp, #components-layout {
+      height: 100%;
+    }
+
+    #components-layout .trigger {
+      font-size: 18px;
+      line-height: 64px;
+      padding: 0 24px;
+      cursor: pointer;
+      transition: color .3s;
+    }
+
+    #components-layout .trigger:hover {
+      color: #1890ff;
+    }
+
+    /* you can make up upload button and sample style by using stylesheets */
+    .ant-upload-select-picture-card i {
+      font-size: 32px;
+      color: #999;
+    }
+
+    .ant-upload-select-picture-card .ant-upload-text {
+      margin-top: 8px;
+      color: #666;
+    }
+
+    .img-xyz img {
+      padding: 5px;
+      cursor: pointer;
+      width: 50px;
+      height: 50px;
+    }
+
+  </style>
+
+</div>
+</body>
+</html>

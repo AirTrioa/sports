@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="mainLayout">
+<body>
+<div th:fragment="main-body">
+  <div id="preloading">
+    <div class="spinner">
+      <div class="rect1"></div>
+      <div class="rect2"></div>
+      <div class="rect3"></div>
+      <div class="rect4"></div>
+      <div class="rect5"></div>
+    </div>
+  </div>
+
+  <div id="VueApp">
+    <a-layout id="components-layout">
+      <a-layout>
+        <a-layout-sider :trigger="null" collapsible v-model="collapsed">
+          <a-menu theme="dark" mode="inline" :default-selected-keys="defaultSelectedKeys"
+                  :default-open-keys="defaultOpenKeys">
+            <template v-for="list in menuList">
+              <a-sub-menu :key="list.key" v-if="list.children && list.children.length > 0">
+                                <span slot="title">
+                                    <a-icon :type="list.icon"></a-icon>
+                                    <span>{{list.name}}</span>
+                                </span>
+                <a-menu-item :key="item.key" v-for="item in list.children"><a :href="item.path">{{item.name}}</a>
+                </a-menu-item>
+              </a-sub-menu>
+              <a-menu-item v-else :key="list.key" class="reset-a">
+                <a-icon :type="list.icon"></a-icon>
+                <span><a :href="list.path">{{list.name}}</a></span>
+              </a-menu-item>
+            </template>
+          </a-menu>
+        </a-layout-sider>
+
+        <a-layout>
+          <a-layout-header style="background: #fff; padding: 0">
+            <a-icon class="trigger" :type="collapsed ? 'menu-unfold' : 'menu-fold'"
+                    @click="collapsed = !collapsed"></a-icon>
+            <div style="float: right">
+              <a-avatar shape="square" size="large" :src="img_src" icon="user"></a-avatar>
+              <a-button type="danger" @click="logout" icon="logout">{{usr_name}}</a-button>
+            </div>
+
+          </a-layout-header>
+
+          <a-breadcrumb style="margin: 16px 0; padding-left: 24px;">
+            <a-breadcrumb-item>首页</a-breadcrumb-item>
+            <a-breadcrumb-item>列表页</a-breadcrumb-item>
+            <a-breadcrumb-item>个人设置</a-breadcrumb-item>
+          </a-breadcrumb>
+
+          <a-layout-content :style="{ background: '#fff', padding: '24px', margin: 0, minHeight: '500px' }">
+            <a-layout>
+              <!--页面左侧-->
+              <a-layout-sider width="210" style="background: #fff">
+
+                <div>
+                  <span style="font-size: 20px;text-align: center">使用头像</span>
+                </div>
+                <div>
+                  <a-avatar shape="square" :size="96" :src="img_src" icon="user"/>
+                </div>
+                <br>
+                <div class="tree-operator" style="margin-bottom: 15px">
+                  <a-button type="primary" size="small" icon="edit" @click="changeAvatar">更换头像</a-button>
+                </div>
+
+                <div class="img-xyz" v-if="avatarTip" title="点击选择头像">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/2.jpg}">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/3.jpg}">
+                  <br>
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/4.jpg}">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/1.jpg}">
+                  <br>
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/5.jpg}">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/6.jpg}">
+                  <br>
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/7.jpg}">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/8.jpg}">
+                  <br>
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/9.jpg}">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/10.jpg}">
+                  <br>
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/11.jpg}">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/12.jpg}">
+                  <br>
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/13.jpg}">
+                  <img @click="changePic" style="padding: 5px;cursor:pointer" th:src="@{/img/14.jpg}">
+                  <br>
+
+                </div>
+
+
+              </a-layout-sider>
+              <a-layout-content :style="{ background: '#fff' }">
+                <span style="font-size: 20px;text-align: center">
+                  个人信息
+                </span>
+                <a-form :form="form" ref="modalForm">
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="名称">
+                    <a-input placeholder="名称"
+                             v-decorator="['username',{rules: [{ required: true, message: '请输入名称' }]}]">
+                      <a-icon
+                          slot="prefix"
+                          type="user"
+                          style="color: rgba(0,0,0,.25)"
+                      ></a-icon>
+
+                    </a-input>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="age">
+                    <a-input style="width: 100%;" placeholder="年龄"
+                             v-decorator="['age',{rules: [{ required: true, message: '请输入年龄' }]}]">
+                      <a-icon
+                          slot="prefix"
+                          type="star"
+                          style="color: rgba(0,0,0,.25)"
+                      ></a-icon>
+
+                    </a-input>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="密码">
+                    <a-input placeholder="密码"
+                             v-decorator="['password',{rules: [{ required: true, message: '请输入密码' }]}]">
+                      <a-icon
+                          slot="prefix"
+                          type="lock"
+                          style="color: rgba(0,0,0,.25)"
+                      ></a-icon>
+
+                    </a-input>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="手机号码">
+                    <a-input placeholder="手机号码"
+                             v-decorator="['phone',{rules: [{ required: true, message: '请输入手机号码' }]}]">
+                      <a-icon
+                          slot="prefix"
+                          type="phone"
+                          style="color: rgba(0,0,0,.25)"
+                      ></a-icon>
+
+                    </a-input>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="邮箱">
+                    <a-input placeholder="邮箱"
+                             v-decorator="['email',{rules: [{ required: true, message: '请输入邮箱' }]}]">
+                      <a-icon
+                          slot="prefix"
+                          type="mail"
+                          style="color: rgba(0,0,0,.25)"
+                      ></a-icon>
+
+                    </a-input>
+                  </a-form-item>
+
+                  <a-form-item :label-col="labelCol" :wrapper-col="wrapperCol" label="更改个人资料">
+                    <a-button
+                        type="primary"
+                        @click="handleEditMessage"
+                    >
+                      submit
+                    </a-button>
+
+                  </a-form-item>
+                </a-form>
+
+              </a-layout-content>
+
+              <a-layout-sider width="400" style="background: #fff">
+                <span style="font-size: 20px;text-align: center">图片墙</span>
+                <template>
+                  <div class="clearfix">
+                    <a-upload
+                        action=""
+                        list-type="picture-card"
+                        :file-list="fileList"
+                        @preview="handlePreview"
+                        @change="handleChange"
+                    >
+                      <div v-if="fileList.length < 20">
+                        <a-icon type="plus"/>
+                        <div class="ant-upload-text">Upload</div>
+                      </div>
+                    </a-upload>
+                    <a-modal :visible="previewVisible" :footer="null" @cancel="handleCancel">
+                      <img alt="example" style="width: 100%" :src="previewImage"/>
+                    </a-modal>
+                  </div>
+                </template>
+              </a-layout-sider>
+            </a-layout>
+          </a-layout-content>
+        </a-layout>
+      </a-layout>
+    </a-layout>
+  </div>
+  <script>
+    var myApp = new Vue({
+      el: '#VueApp',
+      data: {
+        //左侧菜单列表
+        menuList: userList,
+        //默认展开菜单
+        defaultOpenKeys: ['sub1'],
+        //默认选中菜单
+        defaultSelectedKeys: ['sub1-1'],
+        //页面接口信息
+        headers: {
+          authorization: 'authorization-text'
+        },
+        api: {
+          //教练
+          list: {
+            url: '/sports/coach',
+            listType: GLOBAL_CONSTANTS.METHOD.GET,
+            addType: GLOBAL_CONSTANTS.METHOD.POST,
+            editType: GLOBAL_CONSTANTS.METHOD.PUT,
+            deleteType: GLOBAL_CONSTANTS.METHOD.DELETE
+          },
+          staticResource: {
+            url: ''
+          },
+          //课程信息
+          course: {
+            url: '/sports/course',
+            listType: GLOBAL_CONSTANTS.METHOD.GET,
+            addType: GLOBAL_CONSTANTS.METHOD.POST,
+            editType: GLOBAL_CONSTANTS.METHOD.PUT,
+            deleteType: GLOBAL_CONSTANTS.METHOD.DELETE
+          }
+        },
+        //分页数据
+        page: {
+          page: GLOBAL_CONSTANTS.ONE,
+          size: GLOBAL_CONSTANTS.DEFAULT_PAGE_SZIE,
+          totalPages: GLOBAL_CONSTANTS.ZERO
+        },
+        //查询参数
+        queryParam: {},
+        //排序信息
+        sortInfo: [],
+
+        labelCol: {
+          xs: {span: 24},
+          sm: {span: 5}
+        },
+        wrapperCol: {
+          xs: {span: 24},
+          sm: {span: 12}
+        },
+        buttonCol: {
+          wrapperCol: {
+            xs: {span: 24},
+            sm: {span: 12, offset: 5}
+          }
+        },
+        //关闭模态框时销毁子元素
+        destroyOnClose: true,
+        //展开、收起控制
+        advanced: false,
+        collapsed: false,
+        visible: false,
+        confirmLoading: false,
+        listLoading: false,
+        importTip: false,
+        //课程表模态框
+        courseTableTip: false,
+
+        pagination: {
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100']
+        },
+        columns: [{
+          title: '名称',
+          dataIndex: 'name',
+          width: '250px',
+          scopedSlots: {customRender: 'name'},
+          sorter: function (a, b) {
+          }
+        }, {
+          title: '年龄',
+          dataIndex: 'age',
+          width: '250px',
+          sorter: function (a, b) {
+          }
+        }, {
+          title: '性别',
+          dataIndex: 'sex',
+          width: '250px'
+        }, {
+          title: '教授课程',
+          dataIndex: 'courseName',
+          width: '250px'
+        }, {
+          title: '教授人数',
+          dataIndex: 'userNum',
+          width: '250px'
+        }, {
+          title: '操作',
+          dataIndex: 'action',
+          width: '160px',
+          scopedSlots: {customRender: 'action'}
+        }],
+        coachCourseColumns: [{
+          title: '时间/星期',
+          dataIndex: 'timeFrame',
+          width: '250px'
+        }, {
+          title: '周一',
+          dataIndex: 'monday',
+          width: '250px'
+        }, {
+          title: '周二',
+          dataIndex: 'tuesday',
+          width: '250px'
+        }, {
+          title: '周三',
+          dataIndex: 'wednesday',
+          width: '250px'
+        }, {
+          title: '周四',
+          dataIndex: 'thursday',
+          width: '250px'
+        }, {
+          title: '周五',
+          dataIndex: 'friday',
+          width: '250px'
+        }, {
+          title: '周六',
+          dataIndex: 'saturday',
+          width: '250px'
+        }]
+        ,
+        data: [],
+        coachCourseData: [],
+        selected: null,
+        warn_delete: false,
+        /**
+         * 下拉框值
+         */
+        provinceData: ['瑜伽', '篮球'],
+        province: '',
+        coachSex: '',
+        courseName: '',
+        coachName: '',
+        courseTableName: '排课表',
+        usr_name: '',
+        img_src: '',
+        previewVisible: false,
+        previewImage: '',
+        fileList: [{
+          uid: '-1',
+          name: '1.png',
+          status: 'done',
+          url: '/images/wall/1.jpg'
+        }, {
+          uid: '-2',
+          name: 'xxx.png',
+          status: 'done',
+          url: '/images/wall/2.jpg'
+        }, {
+          uid: '-3',
+          name: 'xxx.png',
+          status: 'done',
+          url: '/images/wall/3.jpg'
+        }, {
+          uid: '-4',
+          name: 'xxx.png',
+          status: 'done',
+          url: '/images/wall/4.jpg'
+        }, {
+          uid: '-5',
+          name: 'xxx.png',
+          status: 'done',
+          url: '/images/wall/5.jpg'
+        }, {
+          uid: '-6',
+          name: 'xxx.png',
+          status: 'done',
+          url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png'
+        }],
+        avatarTip: false,
+        user_Id: ''
+      },
+      computed: {
+        form: function () {
+          return this.$form.createForm(this)
+        }
+      },
+      methods: {
+        _renderList: function () {
+          this.getUserSession();
+          var pageParam = {
+            page: this.page.page,
+            size: this.page.size
+          };
+          var ajaxOpt = {
+            url: this.api.list.url,
+            type: this.api.list.listType,
+            param: {
+              page: JSON.stringify(pageParam),
+              sort: JSON.stringify(this.sortInfo),
+              params: JSON.stringify(this.queryParam)
+            }
+          };
+          var self = this;
+          this.listLoading = true;
+          // jsonAjax(ajaxOpt, function (data) {
+          //   var page = BRS.clone(self.pagination);
+          //   //pageDto.total = data.totalSize;
+          //   self.data = data;
+          //   self.listLoading = false;
+          //   self.pagination = page;
+          //  // self.getSelectValue();
+          // });
+        },
+        //获取Session
+        getUserSession: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.login
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null == data) {
+              location.href = session.logon;
+              return;
+            }
+            self.usr_name = data.username;
+            self.img_src = img_src + data.userUrl;
+            self.user_Id = data.userId;
+            self.getUserMessage();
+          });
+
+        },
+        //注销登录--销毁Session
+        logout: function () {
+          var ajaxObj = {
+            url: session_user.url,
+            type: session_user.method.logout
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function (data) {
+            if (null != data) {
+              location.href = session.logout;
+              return;
+            }
+            self.$notification['error']({
+              message: "抱歉",
+              description: "注销失败"
+            });
+          });
+
+        },
+        getUserMessage: function () {
+          var objAjax = {
+            url: user_api + '/userId',
+            type: GET_METHOD,
+            param: {
+              'userId': this.user_Id
+            }
+          };
+          var self = this;
+          jsonAjax(objAjax, function (data) {
+            if (data === null) {
+              this.$notification['error']({
+                message: 'tips:',
+                description: '不存在!'
+              });
+              return;
+            }
+            var value = {
+              'username': data.username,
+              'age': data.age,
+              'phone': data.phone,
+              'password': '******',
+              'email': data.email
+            };
+            self.$nextTick(function () {
+              self.form.setFieldsValue(value);
+            })
+          });
+        },
+        handleCancel() {
+          this.previewVisible = false
+        },
+        handlePreview(file) {
+          this.previewImage = file.url || file.thumbUrl;
+          this.previewVisible = true;
+        },
+        handleChange({fileList}) {
+          this.fileList = fileList;
+        },
+        changeAvatar: function () {
+          this.avatarTip = !this.avatarTip;
+        },
+        changePic: function (obj) {
+          var xyz = obj.target.currentSrc;
+          if (BRS.isBlank(xyz)) {
+            this.$notification['error']({
+              message: '更换失败',
+              description: '请点击图片!'
+            });
+            return;
+          }
+          var ajaxObj = {
+            url: user_api + "/avatar/" + this.user_Id,
+            type: POST_METHOD,
+            param: {
+              'urlParam': xyz
+            }
+          };
+          var self = this;
+          jsonAjax(ajaxObj, function () {
+            self.$notification['info']({
+              message: '更换成功',
+              description: '更换头像成功!'
+            });
+            self.img_src = xyz;
+          });
+          this.getUserSession();
+        },
+        //提交更改信息
+        handleEditMessage: function () {
+          var self = this;
+          // 触发表单验证
+          this.form.validateFields(function (err, values) {
+            if (!err) {
+              var obj = {
+                username: values.username,
+                age: values.age,
+                phone: values.phone,
+                password: values.password,
+                email: values.email
+              };
+              var id = self.user_Id;
+              var ajaxOpt = {
+                url: user_api + "/user_id_user/" + id,
+                type:PUT_METHOD,
+                param: {
+                  'params': JSON.stringify(obj),
+                  'id': id
+                },
+                showSuccessMsg: true
+              };
+              jsonAjax(ajaxOpt,function (data) {
+                self.form.resetFields();
+                self._renderList();
+                self.form.setFieldsValue(data);
+              })
+            }
+          });
+        }
+      },
+      mounted: function () {
+        this._renderList();
+        BRS.preLoading('hide');
+      }
+    })
+  </script>
+
+  <style>
+    #VueApp, #components-layout {
+      height: 100%;
+    }
+
+    #components-layout .trigger {
+      font-size: 18px;
+      line-height: 64px;
+      padding: 0 24px;
+      cursor: pointer;
+      transition: color .3s;
+    }
+
+    #components-layout .trigger:hover {
+      color: #1890ff;
+    }
+
+    /* you can make up upload button and sample style by using stylesheets */
+    .ant-upload-select-picture-card i {
+      font-size: 32px;
+      color: #999;
+    }
+
+    .ant-upload-select-picture-card .ant-upload-text {
+      margin-top: 8px;
+      color: #666;
+    }
+
+    .img-xyz img {
+      padding: 5px;
+      cursor: pointer;
+      width: 50px;
+      height: 50px;
+    }
+
+  </style>
+
+</div>
+</body>
+</html>
